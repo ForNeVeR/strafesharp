@@ -5,7 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Library.fs" />
+    <Compile Include="Datagram.fs" />
+    <Compile Include="KeyboardState.fs" />
+    <Compile Include="Frontend.fs" />
+    <Compile Include="Backend.fs" />
   </ItemGroup>
 
   <ItemGroup>
