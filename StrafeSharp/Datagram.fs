@@ -1,4 +1,4 @@
 namespace StrafeSharp
 
 type Datagram =
-    { Data : byte[][] }
+    { Packets : byte[][] }

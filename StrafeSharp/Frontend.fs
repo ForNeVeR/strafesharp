@@ -3,4 +3,4 @@
 module StrafeSharp.Frontend
 
 let Render (state : KeyboardState) : Datagram =
-    failwith "Not implemented yet"
+    { Packets = Array.zeroCreate 12 }
