@@ -8,7 +8,7 @@ let packetSize = 64
 
 let private colorPacket number values =
     Array.concat <| seq {
-        yield [| 127uy; byte number; 60uy; 0uy |]
+        yield [| 127uy; byte (number + 1); 60uy; 0uy |]
         yield [| for b in 60 * number .. (60 * (number + 1)) - 1 do
                      yield (if b < Array.length values
                          then Array.get values b

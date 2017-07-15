@@ -26,8 +26,7 @@ let ``Each packet has a length of 64`` () =
     |> Array.iter (fun a -> Assert.Equal(64, a.Length))
 
 let private colorPacketHeader n =
-    let index = byte (n / 4)
-    [| 127uy; index; 60uy; 0uy |]
+    [| 127uy; byte n + 1uy; 60uy; 0uy |]
 
 let resize = Utils.resizeTo 64
 
@@ -39,6 +38,7 @@ let splitValueTest baseIndex colorArray datagram =
     let expectedPacket2 =
         resize (Array.concat [| colorPacketHeader 2
                                 Array.skip 120 colorArray |])
+
     Assert.Equal<byte>(expectedPacket0, datagram.Packets.[baseIndex])
     Assert.Equal<byte>(expectedPacket1, datagram.Packets.[baseIndex + 1])
     Assert.Equal<byte>(expectedPacket2, datagram.Packets.[baseIndex + 2])
@@ -47,8 +47,8 @@ let splitValueTest baseIndex colorArray datagram =
 let ``Color values are distributed between the corresponding packets`` () =
     let keyboardState =
         { RedValues = [| 1uy .. byte KeyboardState.KeyCount |]
-          GreenValues = [| byte KeyboardState.KeyCount .. 1uy |]
-          BlueValues = [| byte KeyboardState.KeyCount .. 1uy |] }
+          GreenValues = [| 1uy .. byte KeyboardState.KeyCount |] |> Array.rev
+          BlueValues = [| 1uy .. byte KeyboardState.KeyCount |] |> Array.rev }
     let datagram = Frontend.Render keyboardState
     splitValueTest 0 keyboardState.RedValues datagram
     splitValueTest 4 keyboardState.GreenValues datagram
