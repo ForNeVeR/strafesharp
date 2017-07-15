@@ -6,9 +6,11 @@
 
   <ItemGroup>
     <Compile Include="Datagram.fs" />
+    <Compile Include="IStrafeKeyboard.fs" />
     <Compile Include="KeyboardState.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="Frontend.fs" />
+    <Compile Include="Platform.Windows.fs" />
     <Compile Include="Backend.fs" />
   </ItemGroup>
 

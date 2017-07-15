@@ -18,26 +18,30 @@ let ``Datagram have 12 packets`` () =
     Assert.Equal(12, datagram.Packets.Length)
 
 [<Fact>]
-let ``Each packet has a length of 64`` () =
+let ``Each packet has a length of 65`` () =
     let keyboardState = KeyboardState.Empty
     let datagram = Frontend.Render keyboardState
 
     datagram.Packets
-    |> Array.iter (fun a -> Assert.Equal(64, a.Length))
+    |> Array.iter (fun a -> Assert.Equal(65, a.Length))
 
 let private colorPacketHeader n =
     [| 127uy; byte n + 1uy; 60uy; 0uy |]
 
-let resize = Utils.resizeTo 64
+let resize = Utils.resizeTo 65
 
 let splitValueTest baseIndex colorArray datagram =
-    let expectedPacket0 = Array.concat [| colorPacketHeader 0; Array.take 60 colorArray |]
+    let expectedPacket0 =
+        Array.concat [| colorPacketHeader 0; Array.take 60 colorArray |]
+        |> resize
     let expectedPacket1 =
         Array.concat [| colorPacketHeader 1
                         colorArray |> Array.skip 60 |> Array.take 60 |]
+        |> resize
     let expectedPacket2 =
-        resize (Array.concat [| colorPacketHeader 2
-                                Array.skip 120 colorArray |])
+        Array.concat [| colorPacketHeader 2
+                        Array.skip 120 colorArray |]
+        |> resize
 
     Assert.Equal<byte>(expectedPacket0, datagram.Packets.[baseIndex])
     Assert.Equal<byte>(expectedPacket1, datagram.Packets.[baseIndex + 1])

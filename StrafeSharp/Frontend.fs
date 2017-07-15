@@ -4,7 +4,7 @@ module StrafeSharp.Frontend
 
 open System
 
-let packetSize = 64
+let private packetSize = 65
 
 let private colorPacket number values =
     Array.concat <| seq {
@@ -13,6 +13,7 @@ let private colorPacket number values =
                      yield (if b < Array.length values
                          then Array.get values b
                          else 0uy) |]
+        yield [| 0uy |]
      }
 
 let resize = Utils.resizeTo packetSize
