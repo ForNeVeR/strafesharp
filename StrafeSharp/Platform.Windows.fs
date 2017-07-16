@@ -16,6 +16,15 @@ module NativeMethods =
         uint32& lpNumberOfBytesWritten,
         nativeint lpOverlapped)
 
+let openDeviceHandle vid pid mi =
+    failwith "implement this"
+
+let private getCorsairStrafeHandle() =
+    let vendorId = 0x1b1c
+    let deviceId = 0x1b20
+    let interfaceId = 0x3
+    openDeviceHandle vendorId deviceId interfaceId
+
 let private writeFile file data =
     let mutable writtenBytes = 0u
     let result = NativeMethods.WriteFile(file,
@@ -33,4 +42,5 @@ type WindowsKeyboard(handle : SafeFileHandle) =
             |> Array.iter(writeFile handle)
 
 let openKeyboard() : WindowsKeyboard =
-    failwithf "Not implemented yet"
+    let handle = getCorsairStrafeHandle()
+    new WindowsKeyboard(handle)
