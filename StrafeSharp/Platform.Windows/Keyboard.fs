@@ -17,7 +17,14 @@ let private enumerateDeviceInterface deviceClassGuid =
                 Native.GUID_DEVINTERFACE_HID
                 (Native.DIGCF_PRESENT ||| Native.DIGCF_DEVICEINTERFACE)
         try
-            failwithf "TODO[F]: Call SetupDiEnumDeviceInfo"
+            let mutable counter = 0u
+            let mutable next = true
+            while next do
+                match Native.setupDiEnumDeviceInfo setHandle counter with
+                | Some deviceData ->
+                    counter <- counter + 1u
+                    yield deviceData
+                | None -> next <- false
         finally
             Native.setupDiDestroyDeviceInfoList setHandle
     }

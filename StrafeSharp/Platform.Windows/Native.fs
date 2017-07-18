@@ -14,6 +14,16 @@ let private INVALID_HANDLE_VALUE = nativeint -1
 
 let private throwLastWin32Error () = Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error())
 
+#nowarn "9" // compiler warns on StructLayout; that's unnecessary
+
+[<StructLayout(LayoutKind.Sequential)>]
+[<Struct>]
+type SP_DEVINFO_DATA =
+    val mutable cbSize : uint32
+    val mutable ClassGuid : Guid
+    val mutable DevInst : uint32
+    val mutable Reserved : nativeint
+
 module private SetupAPI =
     [<DllImport("SetupAPI")>]
     extern nativeint SetupDiGetClassDevs(
@@ -21,6 +31,12 @@ module private SetupAPI =
         string Enumerator,
         nativeint hwndParent,
         uint32 Flags)
+
+    [<DllImport("SetupAPI")>]
+    extern bool SetupDiEnumDeviceInfo(
+        nativeint DeviceInfoSet,
+        uint32 MemberIndex,
+        SP_DEVINFO_DATA& DeviceInfoData)
 
     [<DllImport("SetupAPI")>]
     extern bool SetupDiDestroyDeviceInfoList(nativeint DeviceInfoSet)
@@ -34,6 +50,13 @@ let setupDiGetClassDevs (classGuid : Guid) (flags : uint32) : nativeint =
 let setupDiDestroyDeviceInfoList (deviceInfoSet : nativeint) : unit =
     let result = SetupAPI.SetupDiDestroyDeviceInfoList deviceInfoSet
     if not result then throwLastWin32Error()
+
+let setupDiEnumDeviceInfo (deviceInfoSet : nativeint)
+                          (memberIndex : uint32) : SP_DEVINFO_DATA option =
+    let mutable data = SP_DEVINFO_DATA(cbSize = uint32 sizeof<SP_DEVINFO_DATA>)
+    if SetupAPI.SetupDiEnumDeviceInfo(deviceInfoSet, memberIndex, &data)
+    then Some data
+    else None
 
 module private Kernel32 =
     [<DllImport("Kernel32")>]
