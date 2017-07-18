@@ -51,15 +51,12 @@ let private getCorsairStrafeHandle() =
     let deviceId = DeviceId(vendorId, productId, interfaceId)
     openDeviceHandle deviceId
 
-let private writeFile file data =
-    Native.writeFile file data
-
 type WindowsKeyboard(handle : SafeFileHandle) =
     interface IStrafeKeyboard with
         member __.Dispose() = handle.Dispose()
         member __.SendData(data : Datagram) =
             data.Packets
-            |> Array.iter(writeFile handle)
+            |> Array.iter(Native.writeFile handle)
 
 let connect() : WindowsKeyboard =
     let handle = getCorsairStrafeHandle()
