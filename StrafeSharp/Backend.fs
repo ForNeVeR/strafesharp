@@ -4,5 +4,4 @@ module StrafeSharp.Backend
 open StrafeSharp.Platform
 
 let InitializeKeyboard () : IStrafeKeyboard =
-
-    upcast Windows.openKeyboard()
+    upcast Windows.Keyboard.connect()
