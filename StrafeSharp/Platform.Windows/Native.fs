@@ -19,6 +19,14 @@ let private throwLastWin32Error () = Marshal.ThrowExceptionForHR(Marshal.GetHRFo
 
 [<StructLayout(LayoutKind.Sequential)>]
 [<Struct>]
+type SP_DEVICE_INTERFACE_DATA =
+    val mutable cbSize : uint32
+    val mutable InterfaceClassGuid : Guid
+    val mutable Flags : uint32
+    val mutable Reserved : unativeint
+
+[<StructLayout(LayoutKind.Sequential)>]
+[<Struct>]
 type SP_DEVINFO_DATA =
     val mutable cbSize : uint32
     val mutable ClassGuid : Guid
@@ -47,33 +55,50 @@ module private SetupAPI =
     type CONFIGRET = int
     let CR_SUCCESS = 0
 
-    [<DllImport("SetupAPI")>]
+    [<DllImport("Setupapi")>]
     extern CONFIGRET CM_Get_Device_ID(
         uint32 dnDevInst,
         StringBuilder Buffer,
         uint32 BufferLen,
         uint32 ulFlags)
 
-    [<DllImport("SetupAPI")>]
+    [<DllImport("Setupapi")>]
     extern CONFIGRET CM_Get_Device_ID_Size(
         uint32& pulLen,
         uint32 dnDevInst,
         uint32 ulFlags)
 
-    [<DllImport("SetupAPI")>]
+    [<DllImport("Setupapi")>]
     extern nativeint SetupDiGetClassDevs(
         Guid& ClassGuid,
         string Enumerator,
         nativeint hwndParent,
         uint32 Flags)
 
-    [<DllImport("SetupAPI")>]
+    [<DllImport("Setupapi")>]
+    extern bool SetupDiGetDeviceInterfaceDetail(
+        nativeint DeviceInfoSet,
+        SP_DEVICE_INTERFACE_DATA& DeviceInterfaceData,
+        nativeint DeviceInterfaceDetailData,
+        uint32 DeviceInterfaceDetailDataSize,
+        uint32& RequiredSize,
+        nativeint DeviceInfoData)
+
+    [<DllImport("Setupapi")>]
+    extern bool SetupDiEnumDeviceInterfaces(
+        nativeint DeviceInfoSet,
+        SP_DEVINFO_DATA& DeviceInfoData,
+        Guid& InterfaceClassGuid,
+        uint32 MemberIndex,
+        SP_DEVICE_INTERFACE_DATA& DeviceInterfaceData)
+
+    [<DllImport("Setupapi")>]
     extern bool SetupDiEnumDeviceInfo(
         nativeint DeviceInfoSet,
         uint32 MemberIndex,
         SP_DEVINFO_DATA& DeviceInfoData)
 
-    [<DllImport("SetupAPI")>]
+    [<DllImport("Setupapi")>]
     extern bool SetupDiDestroyDeviceInfoList(nativeint DeviceInfoSet)
 
 let cmGetDeviceId (device : SP_DEVINFO_DATA) : string =
@@ -90,11 +115,56 @@ let cmGetDeviceId (device : SP_DEVINFO_DATA) : string =
 
     buffer.ToString()
 
+let private setupDiGetDeviceInformationDetail args : unit =
+    let result = SetupAPI.SetupDiGetDeviceInterfaceDetail args
+    if not result then throwLastWin32Error()
+
+let sizeFromSetupDiGetDeviceInformationDetail (deviceInfoSet : nativeint)
+                                              (interfaceData : SP_DEVICE_INTERFACE_DATA) : uint32 =
+    let mutable deviceInterfaceData = interfaceData
+    let mutable requiredSize = 0u
+    setupDiGetDeviceInformationDetail(deviceInfoSet,
+                                      &deviceInterfaceData,
+                                      IntPtr.Zero,
+                                      0u,
+                                      &requiredSize,
+                                      IntPtr.Zero)
+    requiredSize
+
+let pathFromSetupDiGetDeviceInformationDetail (deviceInfoSet : nativeint)
+                                              (interfaceData : SP_DEVICE_INTERFACE_DATA)
+                                              (buffer : SpDeviceInterfaceDetailData.MemoryBuffer)
+                                              : string =
+    let mutable deviceInterfaceData = interfaceData
+    let mutable requiredSize = 0u
+    let pointer = buffer.Pointer
+    setupDiGetDeviceInformationDetail(deviceInfoSet,
+                                      &deviceInterfaceData,
+                                      pointer,
+                                      uint32 buffer.Size,
+                                      &requiredSize,
+                                      IntPtr.Zero)
+    SpDeviceInterfaceDetailData.getStringContent buffer
+
 let setupDiGetClassDevs (classGuid : Guid) (flags : uint32) : nativeint =
     let mutable classGuidMutable = classGuid
     let result = SetupAPI.SetupDiGetClassDevs(&classGuidMutable, null, IntPtr.Zero, flags)
     if result = INVALID_HANDLE_VALUE then throwLastWin32Error()
     result
+
+let setupDiEnumDeviceInterfaces (deviceInfoSet : nativeint)
+                                (deviceInfoData : SP_DEVINFO_DATA) : SP_DEVICE_INTERFACE_DATA =
+    let mutable mutableDeviceInfoData = deviceInfoData
+    let mutable interfaceClassGuid = GUID_DEVINTERFACE_HID
+    let mutable interfaceData = SP_DEVICE_INTERFACE_DATA()
+    let result = SetupAPI.SetupDiEnumDeviceInterfaces(deviceInfoSet,
+                                                      &mutableDeviceInfoData,
+                                                      &interfaceClassGuid,
+                                                      0u,
+                                                      &interfaceData)
+    if not result then throwLastWin32Error()
+    interfaceData
+
 
 let setupDiDestroyDeviceInfoList (deviceInfoSet : nativeint) : unit =
     let result = SetupAPI.SetupDiDestroyDeviceInfoList deviceInfoSet

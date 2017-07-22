@@ -10,46 +10,47 @@ open StrafeSharp
 let private devicePath = function
     | DeviceId(pid, vid, mi) -> String.Format("VID_{0:X4}_PID_{1:X4}_MI_{2:X2}", pid, vid, mi)
 
-let private enumerateDeviceInterface deviceClassGuid =
-    seq {
-        let setHandle =
-            Native.setupDiGetClassDevs
-                Native.GUID_DEVINTERFACE_HID
-                (Native.DIGCF_PRESENT ||| Native.DIGCF_DEVICEINTERFACE)
-        try
-            let mutable counter = 0u
-            let mutable next = true
-            while next do
-                match Native.setupDiEnumDeviceInfo setHandle counter with
-                | Some deviceData ->
-                    counter <- counter + 1u
-                    yield deviceData
-                | None -> next <- false
-        finally
-            Native.setupDiDestroyDeviceInfoList setHandle
-    }
-
 let private matchingDevice deviceId deviceInfo =
     let expectedDevicePath = devicePath deviceId
     let actualDevicePath = Native.cmGetDeviceId deviceInfo
     expectedDevicePath = actualDevicePath
 
-let getDeviceInterfacePath deviceId =
-    failwithf "TODO[F]: Call SetupDiGetDeviceInterfaceDetail; retrieve DevicePath"
+let private getDeviceInterfacePath deviceInfoSet devInfoData =
+    let interfaceData = Native.setupDiEnumDeviceInterfaces deviceInfoSet devInfoData
+    let size = Native.sizeFromSetupDiGetDeviceInformationDetail deviceInfoSet interfaceData
+    use memory = SpDeviceInterfaceDetailData.allocate (int size)
+    Native.pathFromSetupDiGetDeviceInformationDetail deviceInfoSet interfaceData
 
 let openDeviceFile path =
     failwithf "TODO[F]: Call CreateFile for path"
 
 let private openDeviceHandle deviceId =
-    let deviceInfo =
-        enumerateDeviceInterface Native.GUID_DEVINTERFACE_HID
-        |> Seq.filter(matchingDevice deviceId)
-        |> Seq.tryHead
-    match deviceInfo with
-    | Some info ->
-        let interfacePath = getDeviceInterfacePath info
-        openDeviceFile interfacePath
-        // TODO[F]: No idea if we actually need to call HidD_SetFeature
+    let deviceFilter = matchingDevice deviceId
+    let mutable foundDevice = None
+
+    let deviceInfoSet =
+        Native.setupDiGetClassDevs
+            Native.GUID_DEVINTERFACE_HID
+            (Native.DIGCF_PRESENT ||| Native.DIGCF_DEVICEINTERFACE)
+    try
+        let mutable counter = 0u
+        let mutable next = true
+        while next do
+            match Native.setupDiEnumDeviceInfo deviceInfoSet counter with
+            | Some deviceData ->
+                counter <- counter + 1u
+                if deviceFilter deviceData
+                then
+                    next <- false
+                    let interfacePath = getDeviceInterfacePath deviceInfoSet deviceData
+                    foundDevice <- openDeviceFile interfacePath
+                    // TODO[F]: No idea if we actually need to call HidD_SetFeature
+            | None -> next <- false
+    finally
+        Native.setupDiDestroyDeviceInfoList deviceInfoSet
+
+    match foundDevice with
+    | Some device -> device
     | None -> failwithf "Cannot find device with path %s" (devicePath deviceId)
 
 let private getCorsairStrafeHandle() =
