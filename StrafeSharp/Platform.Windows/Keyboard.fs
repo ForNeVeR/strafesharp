@@ -17,9 +17,9 @@ let private matchingDevice deviceId deviceInfo =
 
 let private getDeviceInterfacePath deviceInfoSet devInfoData =
     let interfaceData = Native.setupDiEnumDeviceInterfaces deviceInfoSet devInfoData
-    let size = Native.sizeFromSetupDiGetDeviceInformationDetail deviceInfoSet interfaceData
+    let size = Native.sizeFromSetupDiGetDeviceInterfaceDetail deviceInfoSet interfaceData
     use memory = SpDeviceInterfaceDetailData.allocate (int size)
-    Native.pathFromSetupDiGetDeviceInformationDetail deviceInfoSet interfaceData memory
+    Native.pathFromSetupDiGetDeviceInterfaceDetail deviceInfoSet interfaceData memory
 
 let private openDeviceFile path =
     Native.createFile path

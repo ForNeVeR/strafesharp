@@ -142,35 +142,34 @@ let cmGetDeviceId (device : SP_DEVINFO_DATA) : string =
 
     buffer.ToString()
 
-let private setupDiGetDeviceInformationDetail args : unit =
-    let result = SetupAPI.SetupDiGetDeviceInterfaceDetail args
-    if not result then throwLastWin32Error()
-
-let sizeFromSetupDiGetDeviceInformationDetail (deviceInfoSet : nativeint)
-                                              (interfaceData : SP_DEVICE_INTERFACE_DATA) : uint32 =
+let sizeFromSetupDiGetDeviceInterfaceDetail (deviceInfoSet : nativeint)
+                                            (interfaceData : SP_DEVICE_INTERFACE_DATA) : uint32 =
     let mutable deviceInterfaceData = interfaceData
     let mutable requiredSize = 0u
-    setupDiGetDeviceInformationDetail(deviceInfoSet,
-                                      &deviceInterfaceData,
-                                      IntPtr.Zero,
-                                      0u,
-                                      &requiredSize,
-                                      IntPtr.Zero)
+    let result = SetupAPI.SetupDiGetDeviceInterfaceDetail(deviceInfoSet,
+                                                          &deviceInterfaceData,
+                                                          IntPtr.Zero,
+                                                          0u,
+                                                          &requiredSize,
+                                                          IntPtr.Zero)
+    if not result then throwLastWin32Error()
     requiredSize
 
-let pathFromSetupDiGetDeviceInformationDetail (deviceInfoSet : nativeint)
-                                              (interfaceData : SP_DEVICE_INTERFACE_DATA)
-                                              (buffer : SpDeviceInterfaceDetailData.MemoryBuffer)
-                                              : string =
+let pathFromSetupDiGetDeviceInterfaceDetail (deviceInfoSet : nativeint)
+                                            (interfaceData : SP_DEVICE_INTERFACE_DATA)
+                                            (buffer : SpDeviceInterfaceDetailData.MemoryBuffer)
+                                            : string =
     let mutable deviceInterfaceData = interfaceData
     let mutable requiredSize = 0u
     let pointer = buffer.Pointer
-    setupDiGetDeviceInformationDetail(deviceInfoSet,
-                                      &deviceInterfaceData,
-                                      pointer,
-                                      uint32 buffer.Size,
-                                      &requiredSize,
-                                      IntPtr.Zero)
+    let result = SetupAPI.SetupDiGetDeviceInterfaceDetail(deviceInfoSet,
+                                                          &deviceInterfaceData,
+                                                          pointer,
+                                                          uint32 buffer.Size,
+                                                          &requiredSize,
+                                                          IntPtr.Zero)
+    if not result then throwLastWin32Error()
+
     SpDeviceInterfaceDetailData.getStringContent buffer
 
 let setupDiGetClassDevs () : nativeint =
@@ -184,7 +183,8 @@ let setupDiEnumDeviceInterfaces (deviceInfoSet : nativeint)
                                 (deviceInfoData : SP_DEVINFO_DATA) : SP_DEVICE_INTERFACE_DATA =
     let mutable mutableDeviceInfoData = deviceInfoData
     let mutable interfaceClassGuid = GUID_DEVINTERFACE_HID
-    let mutable interfaceData = SP_DEVICE_INTERFACE_DATA()
+    let mutable interfaceData =
+        SP_DEVICE_INTERFACE_DATA(cbSize = uint32 sizeof<SP_DEVICE_INTERFACE_DATA>)
     let result = SetupAPI.SetupDiEnumDeviceInterfaces(deviceInfoSet,
                                                       &mutableDeviceInfoData,
                                                       &interfaceClassGuid,
