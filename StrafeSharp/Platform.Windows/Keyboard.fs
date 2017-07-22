@@ -19,19 +19,16 @@ let private getDeviceInterfacePath deviceInfoSet devInfoData =
     let interfaceData = Native.setupDiEnumDeviceInterfaces deviceInfoSet devInfoData
     let size = Native.sizeFromSetupDiGetDeviceInformationDetail deviceInfoSet interfaceData
     use memory = SpDeviceInterfaceDetailData.allocate (int size)
-    Native.pathFromSetupDiGetDeviceInformationDetail deviceInfoSet interfaceData
+    Native.pathFromSetupDiGetDeviceInformationDetail deviceInfoSet interfaceData memory
 
-let openDeviceFile path =
-    failwithf "TODO[F]: Call CreateFile for path"
+let private openDeviceFile path =
+    Native.createFile path
 
 let private openDeviceHandle deviceId =
     let deviceFilter = matchingDevice deviceId
     let mutable foundDevice = None
 
-    let deviceInfoSet =
-        Native.setupDiGetClassDevs
-            Native.GUID_DEVINTERFACE_HID
-            (Native.DIGCF_PRESENT ||| Native.DIGCF_DEVICEINTERFACE)
+    let deviceInfoSet = Native.setupDiGetClassDevs()
     try
         let mutable counter = 0u
         let mutable next = true
@@ -43,7 +40,7 @@ let private openDeviceHandle deviceId =
                 then
                     next <- false
                     let interfacePath = getDeviceInterfacePath deviceInfoSet deviceData
-                    foundDevice <- openDeviceFile interfacePath
+                    foundDevice <- Some (openDeviceFile interfacePath)
                     // TODO[F]: No idea if we actually need to call HidD_SetFeature
             | None -> next <- false
     finally

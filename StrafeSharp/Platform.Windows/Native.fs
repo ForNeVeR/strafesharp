@@ -6,12 +6,20 @@ open System.Runtime.InteropServices
 
 open Microsoft.Win32.SafeHandles
 
-let GUID_DEVINTERFACE_HID : Guid = Guid.ParseExact("{4D1E55B2-F16F-11CF-88CB-001111000030}", "B")
+let private DIGCF_PRESENT : uint32 = 0x2u
+let private DIGCF_DEVICEINTERFACE : uint32 = 0x10u
 
-let DIGCF_PRESENT : uint32 = 0x2u
-let DIGCF_DEVICEINTERFACE : uint32 = 0x10u
+let private FILE_SHARE_READ = 0x00000001u
+let private FILE_SHARE_WRITE = 0x00000002u
+
+let private GENERIC_READ = 0x80000000u
+let private GENERIC_WRITE = 0x40000000u
+
+let private GUID_DEVINTERFACE_HID : Guid = Guid.ParseExact("{4D1E55B2-F16F-11CF-88CB-001111000030}", "B")
 
 let private INVALID_HANDLE_VALUE = nativeint -1
+
+let private OPEN_EXISTING = 3u
 
 let private throwLastWin32Error () = Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error())
 
@@ -35,12 +43,31 @@ type SP_DEVINFO_DATA =
 
 module private Kernel32 =
     [<DllImport("Kernel32")>]
+    extern SafeFileHandle CreateFile(
+        string lpFileName,
+        uint32  dwDesiredAccess,
+        uint32 dwShareMode,
+        nativeint lpSecurityAttributes,
+        uint32 dwCreationDisposition,
+        uint32 dwFlagsAndAttributes,
+        nativeint hTemplateFile)
+
+    [<DllImport("Kernel32")>]
     extern bool WriteFile(
         SafeFileHandle hFile,
         byte[] lpBuffer,
         uint32 nNumberOfBytesToWrite,
         uint32& lpNumberOfBytesWritten,
         nativeint lpOverlapped)
+
+let createFile (path : string) : SafeFileHandle =
+    Kernel32.CreateFile(path,
+                        GENERIC_READ ||| GENERIC_WRITE,
+                        FILE_SHARE_READ ||| FILE_SHARE_WRITE,
+                        IntPtr.Zero,
+                        OPEN_EXISTING,
+                        0u,
+                        IntPtr.Zero)
 
 let writeFile (file : SafeFileHandle) (data : byte[]) : unit =
     let mutable writtenBytes = 0u
@@ -146,9 +173,10 @@ let pathFromSetupDiGetDeviceInformationDetail (deviceInfoSet : nativeint)
                                       IntPtr.Zero)
     SpDeviceInterfaceDetailData.getStringContent buffer
 
-let setupDiGetClassDevs (classGuid : Guid) (flags : uint32) : nativeint =
-    let mutable classGuidMutable = classGuid
-    let result = SetupAPI.SetupDiGetClassDevs(&classGuidMutable, null, IntPtr.Zero, flags)
+let setupDiGetClassDevs () : nativeint =
+    let mutable classGuid = GUID_DEVINTERFACE_HID
+    let flags = DIGCF_PRESENT ||| DIGCF_DEVICEINTERFACE
+    let result = SetupAPI.SetupDiGetClassDevs(&classGuid, null, IntPtr.Zero, flags)
     if result = INVALID_HANDLE_VALUE then throwLastWin32Error()
     result
 
