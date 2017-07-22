@@ -8,12 +8,12 @@ open Microsoft.Win32.SafeHandles
 open StrafeSharp
 
 let private devicePath = function
-    | DeviceId(pid, vid, mi) -> String.Format("VID_{0:X4}_PID_{1:X4}_MI_{2:X2}", pid, vid, mi)
+    | DeviceId(pid, vid, mi) -> String.Format(@"HID\VID_{0:X4}&PID_{1:X4}&MI_{2:X2}\", pid, vid, mi)
 
 let private matchingDevice deviceId deviceInfo =
     let expectedDevicePath = devicePath deviceId
     let actualDevicePath = Native.cmGetDeviceId deviceInfo
-    expectedDevicePath = actualDevicePath
+    actualDevicePath.StartsWith expectedDevicePath
 
 let private getDeviceInterfacePath deviceInfoSet devInfoData =
     let interfaceData = Native.setupDiEnumDeviceInterfaces deviceInfoSet devInfoData
@@ -53,7 +53,7 @@ let private openDeviceHandle deviceId =
 let private getCorsairStrafeHandle() =
     let vendorId = 0x1b1cu
     let productId = 0x1b20u
-    let interfaceId = 0x3u
+    let interfaceId = 0x2u
     let deviceId = DeviceId(vendorId, productId, interfaceId)
     openDeviceHandle deviceId
 

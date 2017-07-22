@@ -135,7 +135,7 @@ let cmGetDeviceId (device : SP_DEVINFO_DATA) : string =
     if lenResult <> SetupAPI.CR_SUCCESS
     then failwithf "CM_Get_Device_ID_Size error: %d" lenResult
 
-    let buffer = StringBuilder(int idLength)
+    let buffer = StringBuilder(int idLength + 1) // 1 for terminating zero
     let idResult = SetupAPI.CM_Get_Device_ID(devInst, buffer, uint32 buffer.Capacity, 0u)
     if idResult <> SetupAPI.CR_SUCCESS
     then failwithf "CM_Get_Device_ID error: %d" idResult
@@ -192,7 +192,6 @@ let setupDiEnumDeviceInterfaces (deviceInfoSet : nativeint)
                                                       &interfaceData)
     if not result then throwLastWin32Error()
     interfaceData
-
 
 let setupDiDestroyDeviceInfoList (deviceInfoSet : nativeint) : unit =
     let result = SetupAPI.SetupDiDestroyDeviceInfoList deviceInfoSet
