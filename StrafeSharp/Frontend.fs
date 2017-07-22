@@ -8,20 +8,19 @@ let private packetSize = 65
 
 let private colorPacket number values =
     Array.concat <| seq {
-        yield [| 127uy; byte (number + 1); 60uy; 0uy |]
+        yield [| 0uy; 127uy; byte (number + 1); (if number = 2 then 0x30uy else 0x3Cuy); 0uy |]
         yield [| for b in 60 * number .. (60 * (number + 1)) - 1 do
                      yield (if b < Array.length values
                          then Array.get values b
                          else 0uy) |]
-        yield [| 0uy |]
      }
 
 let private resize = Utils.resizeTo packetSize
 
 let private staticPacket = function
-    | 3 -> resize [| 7uy; 40uy; 1uy; 3uy; 1uy; |]
-    | 7 -> resize [| 7uy; 40uy; 2uy; 3uy; 1uy; |]
-    | 11 -> resize [| 7uy; 40uy; 3uy; 3uy; 2uy; |]
+    | 3 -> resize [| 0uy; 7uy; 40uy; 1uy; 3uy; 1uy; |]
+    | 7 -> resize [| 0uy; 7uy; 40uy; 2uy; 3uy; 1uy; |]
+    | 11 -> resize [| 0uy; 7uy; 40uy; 3uy; 3uy; 2uy; |]
     | o -> failwithf "Don't know how to generate static packet number %d" o
 
 let private generatePackage state = function

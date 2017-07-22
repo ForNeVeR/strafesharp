@@ -27,7 +27,7 @@ let ``Each packet has a length of 65`` () =
     |> Array.iter (fun a -> Assert.Equal(65, a.Length))
 
 let private colorPacketHeader n =
-    [| 127uy; byte n + 1uy; 60uy; 0uy |]
+    [| 0uy; 127uy; byte n + 1uy; (if n = 2 then 0x30uy else 0x3Cuy); 0uy |]
 
 let resize = Utils.resizeTo 65
 
@@ -64,9 +64,9 @@ let ``Packets 3, 7 and 11 have fixed content`` () =
     let keyboardState = KeyboardState.Empty
     let datagram = Frontend.Render keyboardState
     let genFixedPacket = function
-        | 3 -> resize [| 7uy; 40uy; 1uy; 3uy; 1uy |]
-        | 7 -> resize [| 7uy; 40uy; 2uy; 3uy; 1uy |]
-        | 11 -> resize [| 7uy; 40uy; 3uy; 3uy; 2uy |]
+        | 3 -> resize [| 0uy; 7uy; 40uy; 1uy; 3uy; 1uy |]
+        | 7 -> resize [| 0uy; 7uy; 40uy; 2uy; 3uy; 1uy |]
+        | 11 -> resize [| 0uy; 7uy; 40uy; 3uy; 3uy; 2uy |]
         | _ -> failwith "Impossible"
     let packet3 = datagram.Packets.[3]
     let packet7 = datagram.Packets.[7]
