@@ -30,8 +30,9 @@ let private enumerateDeviceInterface deviceClassGuid =
     }
 
 let private matchingDevice deviceId deviceInfo =
-    let devicePath = devicePath deviceId
-    failwithf "TODO[F]: Call CM_Get_Device_ID on deviceInfo, compare result with devicePath"
+    let expectedDevicePath = devicePath deviceId
+    let actualDevicePath = Native.cmGetDeviceId deviceInfo
+    expectedDevicePath = actualDevicePath
 
 let getDeviceInterfacePath deviceId =
     failwithf "TODO[F]: Call SetupDiGetDeviceInterfaceDetail; retrieve DevicePath"

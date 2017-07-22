@@ -1,6 +1,7 @@
 module internal StrafeSharp.Platform.Windows.Native
 
 open System
+open System.Text
 open System.Runtime.InteropServices
 
 open Microsoft.Win32.SafeHandles
@@ -24,40 +25,6 @@ type SP_DEVINFO_DATA =
     val mutable DevInst : uint32
     val mutable Reserved : nativeint
 
-module private SetupAPI =
-    [<DllImport("SetupAPI")>]
-    extern nativeint SetupDiGetClassDevs(
-        Guid& ClassGuid,
-        string Enumerator,
-        nativeint hwndParent,
-        uint32 Flags)
-
-    [<DllImport("SetupAPI")>]
-    extern bool SetupDiEnumDeviceInfo(
-        nativeint DeviceInfoSet,
-        uint32 MemberIndex,
-        SP_DEVINFO_DATA& DeviceInfoData)
-
-    [<DllImport("SetupAPI")>]
-    extern bool SetupDiDestroyDeviceInfoList(nativeint DeviceInfoSet)
-
-let setupDiGetClassDevs (classGuid : Guid) (flags : uint32) : nativeint =
-    let mutable classGuidMutable = classGuid
-    let result = SetupAPI.SetupDiGetClassDevs(&classGuidMutable, null, IntPtr.Zero, flags)
-    if result = INVALID_HANDLE_VALUE then throwLastWin32Error()
-    result
-
-let setupDiDestroyDeviceInfoList (deviceInfoSet : nativeint) : unit =
-    let result = SetupAPI.SetupDiDestroyDeviceInfoList deviceInfoSet
-    if not result then throwLastWin32Error()
-
-let setupDiEnumDeviceInfo (deviceInfoSet : nativeint)
-                          (memberIndex : uint32) : SP_DEVINFO_DATA option =
-    let mutable data = SP_DEVINFO_DATA(cbSize = uint32 sizeof<SP_DEVINFO_DATA>)
-    if SetupAPI.SetupDiEnumDeviceInfo(deviceInfoSet, memberIndex, &data)
-    then Some data
-    else None
-
 module private Kernel32 =
     [<DllImport("Kernel32")>]
     extern bool WriteFile(
@@ -75,3 +42,67 @@ let writeFile (file : SafeFileHandle) (data : byte[]) : unit =
                                     &writtenBytes,
                                     IntPtr.Zero)
     if not result then throwLastWin32Error()
+
+module private SetupAPI =
+    type CONFIGRET = int
+    let CR_SUCCESS = 0
+
+    [<DllImport("SetupAPI")>]
+    extern CONFIGRET CM_Get_Device_ID(
+        uint32 dnDevInst,
+        StringBuilder Buffer,
+        uint32 BufferLen,
+        uint32 ulFlags)
+
+    [<DllImport("SetupAPI")>]
+    extern CONFIGRET CM_Get_Device_ID_Size(
+        uint32& pulLen,
+        uint32 dnDevInst,
+        uint32 ulFlags)
+
+    [<DllImport("SetupAPI")>]
+    extern nativeint SetupDiGetClassDevs(
+        Guid& ClassGuid,
+        string Enumerator,
+        nativeint hwndParent,
+        uint32 Flags)
+
+    [<DllImport("SetupAPI")>]
+    extern bool SetupDiEnumDeviceInfo(
+        nativeint DeviceInfoSet,
+        uint32 MemberIndex,
+        SP_DEVINFO_DATA& DeviceInfoData)
+
+    [<DllImport("SetupAPI")>]
+    extern bool SetupDiDestroyDeviceInfoList(nativeint DeviceInfoSet)
+
+let cmGetDeviceId (device : SP_DEVINFO_DATA) : string =
+    let devInst = device.DevInst
+    let mutable idLength = 0u
+    let lenResult = SetupAPI.CM_Get_Device_ID_Size(&idLength, devInst, 0u)
+    if lenResult <> SetupAPI.CR_SUCCESS
+    then failwithf "CM_Get_Device_ID_Size error: %d" lenResult
+
+    let buffer = StringBuilder(int idLength)
+    let idResult = SetupAPI.CM_Get_Device_ID(devInst, buffer, uint32 buffer.Capacity, 0u)
+    if idResult <> SetupAPI.CR_SUCCESS
+    then failwithf "CM_Get_Device_ID error: %d" idResult
+
+    buffer.ToString()
+
+let setupDiGetClassDevs (classGuid : Guid) (flags : uint32) : nativeint =
+    let mutable classGuidMutable = classGuid
+    let result = SetupAPI.SetupDiGetClassDevs(&classGuidMutable, null, IntPtr.Zero, flags)
+    if result = INVALID_HANDLE_VALUE then throwLastWin32Error()
+    result
+
+let setupDiDestroyDeviceInfoList (deviceInfoSet : nativeint) : unit =
+    let result = SetupAPI.SetupDiDestroyDeviceInfoList deviceInfoSet
+    if not result then throwLastWin32Error()
+
+let setupDiEnumDeviceInfo (deviceInfoSet : nativeint)
+                          (memberIndex : uint32) : SP_DEVINFO_DATA option =
+    let mutable data = SP_DEVINFO_DATA(cbSize = uint32 sizeof<SP_DEVINFO_DATA>)
+    if SetupAPI.SetupDiEnumDeviceInfo(deviceInfoSet, memberIndex, &data)
+    then Some data
+    else None
