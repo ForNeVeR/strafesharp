@@ -41,7 +41,6 @@ let private openDeviceHandle deviceId =
                     next <- false
                     let interfacePath = getDeviceInterfacePath deviceInfoSet deviceData
                     foundDevice <- Some (openDeviceFile interfacePath)
-                    // TODO[F]: No idea if we actually need to call HidD_SetFeature
             | None -> next <- false
     finally
         Native.setupDiDestroyDeviceInfoList deviceInfoSet
