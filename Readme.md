@@ -26,6 +26,14 @@ $ dotnet build
 $ dotnet test ./StrafeSharp.Tests/StrafeSharp.Tests.fsproj
 ```
 
+### Run
+
+To run the example program, execute the following:
+
+```console
+$ dotnet run --project ./StrafeSharp.Console/StrafeSharp.Console.fsproj
+```
+
 ### IDE Integration
 
 There're [VSCode tasks][vscode-tasks] configured for the project. If you're

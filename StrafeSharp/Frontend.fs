@@ -16,7 +16,7 @@ let private colorPacket number values =
         yield [| 0uy |]
      }
 
-let resize = Utils.resizeTo packetSize
+let private resize = Utils.resizeTo packetSize
 
 let private staticPacket = function
     | 3 -> resize [| 7uy; 40uy; 1uy; 3uy; 1uy; |]

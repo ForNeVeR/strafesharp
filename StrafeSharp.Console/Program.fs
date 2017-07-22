@@ -1,8 +1,11 @@
-﻿// Learn more about F# at http://fsharp.org
+﻿open System
 
-open System
+open StrafeSharp
 
 [<EntryPoint>]
 let main argv =
-    printfn "Hello World from F#!"
-    0 // return an integer exit code
+    use keyboard = Backend.InitializeKeyboard()
+    let state = KeyboardState.Empty
+    let datagram = Frontend.Render state
+    keyboard.SendData datagram
+    0
