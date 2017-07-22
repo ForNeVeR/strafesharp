@@ -21,7 +21,9 @@ let private INVALID_HANDLE_VALUE = nativeint -1
 
 let private OPEN_EXISTING = 3u
 
-let private throwLastWin32Error () = Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error())
+let private throwLastWin32Error () =
+    let error = Marshal.GetLastWin32Error()
+    failwith <| String.Format("Win32 error {0:X}", error)
 
 #nowarn "9" // compiler warns on StructLayout; that's unnecessary
 
@@ -103,7 +105,7 @@ module private SetupAPI =
         uint32 Flags)
 
     [<DllImport("Setupapi")>]
-    extern bool SetupDiGetDeviceInterfaceDetail(
+    extern bool SetupDiGetDeviceInterfaceDetailW(
         nativeint DeviceInfoSet,
         SP_DEVICE_INTERFACE_DATA& DeviceInterfaceData,
         nativeint DeviceInterfaceDetailData,
@@ -146,13 +148,13 @@ let sizeFromSetupDiGetDeviceInterfaceDetail (deviceInfoSet : nativeint)
                                             (interfaceData : SP_DEVICE_INTERFACE_DATA) : uint32 =
     let mutable deviceInterfaceData = interfaceData
     let mutable requiredSize = 0u
-    let result = SetupAPI.SetupDiGetDeviceInterfaceDetail(deviceInfoSet,
-                                                          &deviceInterfaceData,
-                                                          IntPtr.Zero,
-                                                          0u,
-                                                          &requiredSize,
-                                                          IntPtr.Zero)
-    if not result then throwLastWin32Error()
+    SetupAPI.SetupDiGetDeviceInterfaceDetailW(deviceInfoSet,
+                                              &deviceInterfaceData,
+                                              IntPtr.Zero,
+                                              0u,
+                                              &requiredSize,
+                                              IntPtr.Zero)
+    |> ignore
     requiredSize
 
 let pathFromSetupDiGetDeviceInterfaceDetail (deviceInfoSet : nativeint)
@@ -162,12 +164,12 @@ let pathFromSetupDiGetDeviceInterfaceDetail (deviceInfoSet : nativeint)
     let mutable deviceInterfaceData = interfaceData
     let mutable requiredSize = 0u
     let pointer = buffer.Pointer
-    let result = SetupAPI.SetupDiGetDeviceInterfaceDetail(deviceInfoSet,
-                                                          &deviceInterfaceData,
-                                                          pointer,
-                                                          uint32 buffer.Size,
-                                                          &requiredSize,
-                                                          IntPtr.Zero)
+    let result = SetupAPI.SetupDiGetDeviceInterfaceDetailW(deviceInfoSet,
+                                                           &deviceInterfaceData,
+                                                           pointer,
+                                                           uint32 buffer.Size,
+                                                           &requiredSize,
+                                                           IntPtr.Zero)
     if not result then throwLastWin32Error()
 
     SpDeviceInterfaceDetailData.getStringContent buffer
