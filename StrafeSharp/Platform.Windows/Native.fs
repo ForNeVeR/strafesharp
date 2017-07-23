@@ -44,7 +44,7 @@ type SP_DEVINFO_DATA =
     val mutable Reserved : nativeint
 
 module private Kernel32 =
-    [<DllImport("Kernel32")>]
+    [<DllImport("Kernel32", CharSet = CharSet.Unicode)>]
     extern SafeFileHandle CreateFile(
         string lpFileName,
         uint32  dwDesiredAccess,
@@ -54,7 +54,7 @@ module private Kernel32 =
         uint32 dwFlagsAndAttributes,
         nativeint hTemplateFile)
 
-    [<DllImport("Kernel32")>]
+    [<DllImport("Kernel32", CharSet = CharSet.Unicode)>]
     extern bool WriteFile(
         SafeFileHandle hFile,
         byte[] lpBuffer,
@@ -84,28 +84,28 @@ module private SetupAPI =
     type CONFIGRET = int
     let CR_SUCCESS = 0
 
-    [<DllImport("Setupapi")>]
+    [<DllImport("Setupapi", CharSet = CharSet.Unicode)>]
     extern CONFIGRET CM_Get_Device_ID(
         uint32 dnDevInst,
         StringBuilder Buffer,
         uint32 BufferLen,
         uint32 ulFlags)
 
-    [<DllImport("Setupapi")>]
+    [<DllImport("Setupapi", CharSet = CharSet.Unicode)>]
     extern CONFIGRET CM_Get_Device_ID_Size(
         uint32& pulLen,
         uint32 dnDevInst,
         uint32 ulFlags)
 
-    [<DllImport("Setupapi")>]
+    [<DllImport("Setupapi", CharSet = CharSet.Unicode)>]
     extern nativeint SetupDiGetClassDevs(
         Guid& ClassGuid,
         string Enumerator,
         nativeint hwndParent,
         uint32 Flags)
 
-    [<DllImport("Setupapi")>]
-    extern bool SetupDiGetDeviceInterfaceDetailW(
+    [<DllImport("Setupapi", CharSet = CharSet.Unicode)>]
+    extern bool SetupDiGetDeviceInterfaceDetail(
         nativeint DeviceInfoSet,
         SP_DEVICE_INTERFACE_DATA& DeviceInterfaceData,
         nativeint DeviceInterfaceDetailData,
@@ -113,7 +113,7 @@ module private SetupAPI =
         uint32& RequiredSize,
         nativeint DeviceInfoData)
 
-    [<DllImport("Setupapi")>]
+    [<DllImport("Setupapi", CharSet = CharSet.Unicode)>]
     extern bool SetupDiEnumDeviceInterfaces(
         nativeint DeviceInfoSet,
         SP_DEVINFO_DATA& DeviceInfoData,
@@ -121,13 +121,13 @@ module private SetupAPI =
         uint32 MemberIndex,
         SP_DEVICE_INTERFACE_DATA& DeviceInterfaceData)
 
-    [<DllImport("Setupapi")>]
+    [<DllImport("Setupapi", CharSet = CharSet.Unicode)>]
     extern bool SetupDiEnumDeviceInfo(
         nativeint DeviceInfoSet,
         uint32 MemberIndex,
         SP_DEVINFO_DATA& DeviceInfoData)
 
-    [<DllImport("Setupapi")>]
+    [<DllImport("Setupapi", CharSet = CharSet.Unicode)>]
     extern bool SetupDiDestroyDeviceInfoList(nativeint DeviceInfoSet)
 
 let cmGetDeviceId (device : SP_DEVINFO_DATA) : string =
@@ -148,12 +148,12 @@ let sizeFromSetupDiGetDeviceInterfaceDetail (deviceInfoSet : nativeint)
                                             (interfaceData : SP_DEVICE_INTERFACE_DATA) : uint32 =
     let mutable deviceInterfaceData = interfaceData
     let mutable requiredSize = 0u
-    SetupAPI.SetupDiGetDeviceInterfaceDetailW(deviceInfoSet,
-                                              &deviceInterfaceData,
-                                              IntPtr.Zero,
-                                              0u,
-                                              &requiredSize,
-                                              IntPtr.Zero)
+    SetupAPI.SetupDiGetDeviceInterfaceDetail(deviceInfoSet,
+                                             &deviceInterfaceData,
+                                             IntPtr.Zero,
+                                             0u,
+                                             &requiredSize,
+                                             IntPtr.Zero)
     |> ignore
     requiredSize
 
@@ -164,12 +164,12 @@ let pathFromSetupDiGetDeviceInterfaceDetail (deviceInfoSet : nativeint)
     let mutable deviceInterfaceData = interfaceData
     let mutable requiredSize = 0u
     let pointer = buffer.Pointer
-    let result = SetupAPI.SetupDiGetDeviceInterfaceDetailW(deviceInfoSet,
-                                                           &deviceInterfaceData,
-                                                           pointer,
-                                                           uint32 buffer.Size,
-                                                           &requiredSize,
-                                                           IntPtr.Zero)
+    let result = SetupAPI.SetupDiGetDeviceInterfaceDetail(deviceInfoSet,
+                                                          &deviceInterfaceData,
+                                                          pointer,
+                                                          uint32 buffer.Size,
+                                                          &requiredSize,
+                                                          IntPtr.Zero)
     if not result then throwLastWin32Error()
 
     SpDeviceInterfaceDetailData.getStringContent buffer
