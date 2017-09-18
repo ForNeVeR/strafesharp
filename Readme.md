@@ -9,7 +9,8 @@ Build
 
 ### Prerequisites
 
-To build the library, you need to install crossplatform [.NET Core SDK][dotnet].
+To build the library, you need to install crossplatform [.NET Core SDK][dotnet]
+2.0+.
 
 ### Building
 
@@ -23,7 +24,7 @@ $ dotnet build
 ### Test
 
 ```console
-$ dotnet test ./StrafeSharp.Tests/StrafeSharp.Tests.fsproj
+$ dotnet test StrafeSharp.Tests
 ```
 
 ### Run
@@ -31,7 +32,7 @@ $ dotnet test ./StrafeSharp.Tests/StrafeSharp.Tests.fsproj
 To run the example program, execute the following:
 
 ```console
-$ dotnet run --project ./StrafeSharp.Console/StrafeSharp.Console.fsproj
+$ dotnet run --project StrafeSharp.Console
 ```
 
 ### IDE Integration
