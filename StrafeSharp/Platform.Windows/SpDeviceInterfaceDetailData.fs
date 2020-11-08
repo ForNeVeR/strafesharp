@@ -44,7 +44,7 @@ module CrossPlatform =
     let allocate (intPtrSize : int) (totalBufferSize : int) : MemoryBuffer =
         let headerSize = determineHeaderSize intPtrSize
         if totalBufferSize < headerSize
-        then failwithf "bufferSize (%d) should be greater than SP_DEVICE_INTERFACE_DETAIL_DATA header size (%d)" totalBufferSize headerSize
+        then failwithf "bufferSize (%d) should be greater than or equal to SP_DEVICE_INTERFACE_DETAIL_DATA header size (%d)" totalBufferSize headerSize
 
         let pointer = Marshal.AllocHGlobal(totalBufferSize)
         Marshal.WriteInt32(pointer, 0, headerSize)
