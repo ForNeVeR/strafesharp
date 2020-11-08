@@ -53,5 +53,5 @@ module CrossPlatform =
 let allocate : int -> MemoryBuffer = CrossPlatform.allocate IntPtr.Size
 
 let getStringContent (buffer : MemoryBuffer) : string =
-    let charPtr = NativePtr.add (NativePtr.ofNativeInt buffer.Pointer) (sizeof<uint32> / sizeof<char>)
+    let charPtr = NativePtr.add (NativePtr.ofNativeInt<char> buffer.Pointer) (sizeof<uint32> / sizeof<char>)
     String(charPtr)

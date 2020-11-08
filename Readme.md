@@ -9,8 +9,8 @@ Build
 
 ### Prerequisites
 
-To build the library, you need to install crossplatform [.NET Core SDK][dotnet]
-2.0+.
+To build the library, you need to install cross-platform [.NET Core SDK][dotnet]
+3.1+.
 
 ### Building
 
@@ -43,6 +43,7 @@ the unit tests.
 
 [andivionian-status-classifier]: https://github.com/ForNeVeR/andivionian-status-classifier#status-umbra-
 [corsair-strafe-rgb]: http://www.corsair.com/en-eu/strafe-rgb-mechanical-gaming-keyboard-cherry-mx-silent
+[dotnet]: https://dot.net
 [vscode-tasks]: https://code.visualstudio.com/docs/editor/task
 
 [status-umbra]: https://img.shields.io/badge/status-umbra-red.svg
